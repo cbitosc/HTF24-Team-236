@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teacher Homepage</title>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.20.0/firebase-app.js";
+        import { getAuth, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.20.0/firebase-auth.js";
+        import { getDatabase, ref, get, child } from "https://www.gstatic.com/firebasejs/9.20.0/firebase-database.js";
+
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyCBCKg6N41bCJioJpo3p0fv761DvC3JcSE",
+            authDomain: "tech-innovators-cdc62.firebaseapp.com",
+            projectId: "tech-innovators-cdc62",
+            storageBucket: "tech-innovators-cdc62.appspot.com",
+            messagingSenderId: "744100025687",
+            appId: "1:744100025687:web:38d8e31f0a22f528271a12",
+            measurementId: "G-GC02GLH9GC"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const database = getDatabase(app);
+
+        // Authenticate user and display greeting and image
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                displayGreeting(user);
+                displayUserImage(user);
+            } else {
+                window.location.href = 'index.html'; // Redirect to login page if not logged in
+            }
+        });
+
+        // Display personalized greeting based on time of day
+        const displayGreeting = (user) => {
+            const currentHour = new Date().getHours();
+            let greeting;
+
+            if (currentHour < 12) {
+                greeting = "Good morning";
+            } else if (currentHour < 18) {
+                greeting = "Good afternoon";
+            } else {
+                greeting = "Good evening";
+            }
+
+            document.getElementById('greeting').innerText = `${greeting}, ${user.displayName}!`;
+        };
+
+        // Display user's profile image
+        const displayUserImage = (user) => {
+            const userImage = document.getElementById('userImage');
+            userImage.src = user.photoURL || 'default-profile.png'; // Use default image if none
+            userImage.alt = user.displayName;
+        };
+
+        // Logout functionality
+        window.logout = async () => {
+            if (confirm("Are you sure you want to log out?")) {
+                try {
+                    await signOut(auth);
+                    window.location.href = 'index.html'; // Redirect to login page
+                } catch (error) {
+                    console.error("Logout error:", error);
+                }
+            }
+        };
+
+        // Send email using server-side logic (replace with actual server URL)
+        window.sendEmail = async () => {
+            const emailBody = document.getElementById('emailBody').value;
+
+            if (!emailBody) {
+                alert("Please enter a message to send.");
+                return;
+            }
+
+            try {
+                // Get users' email addresses from the database
+                const usersRef = ref(database, 'users'); // Adjust the path to your users
+                const snapshot = await get(usersRef);
+
+                if (snapshot.exists()) {
+                    const users = snapshot.val();
+                    const emailPromises = [];
+
+                    // Loop through users and send email
+                    for (const userId in users) {
+                        const user = users[userId];
+                        if (user.email) {
+                            emailPromises.push(sendEmailToUser(user.email, emailBody));
+                        }
+                    }
+
+                    // Wait for all emails to be sent
+                    await Promise.all(emailPromises);
+                    alert("Emails sent successfully!");
+                } else {
+                    alert("No users found.");
+                }
+            } catch (error) {
+                console.error("Error retrieving users:", error);
+                alert("An error occurred while retrieving users.");
+            }
+        };
+
+        // Function to send email to a specific user
+        const sendEmailToUser = async (recipient, emailBody) => {
+            try {
+                const response = await fetch('http://localhost:3001/send-email', { // Replace with your server URL
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        message: emailBody,
+                        recipient: recipient
+                    }),
+                });
+
+                if (!response.ok) {
+                    throw new Error("Failed to send email to " + recipient);
+                }
+            } catch (error) {
+                console.error("Error sending email to", recipient, ":", error);
+            }
+        };
+    </script>
+
+    <style>
+        /* Styles */
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #ff6b6b, #f9a826);
+            color: #333;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+        nav {
+            background-color: #fff;
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        nav h1 {
+            margin: 0;
+            color: #ff6b6b;
+        }
+        nav .user-info {
+            display: flex;
+            align-items: center;
+        }
+        nav img {
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            margin-right: 10px;
+        }
+        nav .logout-link {
+            color: #ff6b6b;
+            text-decoration: none;
+            padding: 5px 10px;
+            border: 2px solid #ff6b6b;
+            border-radius: 5px;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        nav .logout-link:hover {
+            background-color: #ff6b6b;
+            color: #fff;
+        }
+        .navbar {
+            background-color: #f9a826;
+            display: flex;
+            justify-content: center;
+            padding: 10px 0;
+        }
+        .navbar a {
+            margin: 0 15px;
+            color: #fff;
+            text-decoration: none;
+            font-weight: bold;
+            transition: color 0.3s;
+        }
+        .navbar a:hover {
+            color: #ff6b6b;
+        }
+        .content {
+            flex: 1;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: #fff;
+        }
+        .greeting {
+            font-size: 1.5em;
+            margin-bottom: 20px;
+        }
+        .email-form {
+            background: white;
+            color: #333;
+            border-radius: 5px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 500px;
+        }
+        .email-form textarea {
+            width: 100%;
+            height: 100px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            padding: 10px;
+            resize: none;
+        }
+        .email-form button {
+            background-color: #ff6b6b;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .email-form button:hover {
+            background-color: #f9a826;
+        }
+        /* Responsive design */
+        @media (max-width: 600px) {
+            nav h1 {
+                font-size: 1.2em;
+            }
+            .navbar a {
+                font-size: 0.9em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <h1>Hackathon Admin</h1>
+        <div class="user-info">
+            <img id="userImage" src="" alt="User Image">
+            <a href="#" class="logout-link" onclick="logout()">Logout</a>
+        </div>
+    </nav>
+    <div class="navbar">
+        <a href="#" onclick="loadPage('composeEmail')">Compose Email</a>
+        <a href="#" onclick="loadPage('updateVenue')">Update Venue</a>
+    </div>
+    <div class="content">
+        <div class="greeting" id="greeting"></div>
+        <div class="email-form">
+            <h2>Send Email to Students</h2>
+            <textarea id="emailBody" placeholder="Enter your message here..."></textarea>
+            <button onclick="sendEmail()">Send Email</button>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teacher Login</title>
+    <script type="module">
+        // Import Firebase libraries
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.20.0/firebase-app.js";
+        import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.20.0/firebase-auth.js";
+        import { getDatabase, ref, set, get, child } from "https://www.gstatic.com/firebasejs/9.20.0/firebase-database.js";
+
+        // Your web app's Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyCBCKg6N41bCJioJpo3p0fv761DvC3JcSE",
+            authDomain: "tech-innovators-cdc62.firebaseapp.com",
+            projectId: "tech-innovators-cdc62",
+            storageBucket: "tech-innovators-cdc62.appspot.com",
+            messagingSenderId: "744100025687",
+            appId: "1:744100025687:web:38d8e31f0a22f528271a12",
+            measurementId: "G-GC02GLH9GC"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth();
+        const provider = new GoogleAuthProvider();
+        const database = getDatabase();
+
+        // Function to handle Google login
+        const loginWithGoogle = async () => {
+            try {
+                const result = await signInWithPopup(auth, provider);
+                const user = result.user;
+                console.log("User logged in:", user);
+                // Redirect to homepage after successful login
+                window.location.href = 'homepage.html'; // Change to your homepage path
+            } catch (error) {
+                console.error("Error during login:", error);
+            }
+        };
+
+        // Add this function after user authentication
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                const userEmail = user.email;
+                const userId = user.uid; // Unique ID for the user
+
+                // Reference to your database
+                const dbRef = ref(database, 'users/' + userId);
+
+                // Check if the user already exists
+                const snapshot = await get(dbRef);
+                if (!snapshot.exists()) {
+                    // If the user does not exist, add their email to the database
+                    await set(dbRef, {
+                        email: userEmail,
+                        // Add any other user details you want to store
+                    });
+                }
+                // Optionally, you can call displayGreeting(user) and displayUserImage(user) functions here
+            } else {
+                window.location.href = 'index.html'; // Redirect to login page if not logged in
+            }
+        });
+
+        // Attach the login function to the button after the script loads
+        window.onload = () => {
+            document.getElementById('googleLogin').onclick = loginWithGoogle;
+        };
+    </script>
+    <script type="module" src="https://unpkg.com/@splinetool/viewer@1.9.35/build/spline-viewer.js"></script>
+    <style>
+        body {
+            display: flex; /* Use flexbox to arrange items */
+            height: 100vh; /* Full height */
+            margin: 0;
+            background-color: #fff; /* White background for the body */
+        }
+        spline-viewer {
+            width: 60%; /* 60% for the spline viewer */
+            height: 100%; /* Full height */
+        }
+        .login-container {
+            width: 40%; /* 40% for the login section */
+            display: flex;
+            flex-direction: column; /* Align items vertically */
+            justify-content: center; /* Center items vertically */
+            align-items: center; /* Center items horizontally */
+            background: linear-gradient(135deg, #ff6b6b, #f9a826); /* Gradient background for the login section */
+            padding: 20px; /* Optional padding */
+            border-radius: 10px; /* Rounded corners for the login section */
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2); /* Shadow for depth */
+        }
+        h1 {
+            margin-bottom: 20px;
+            color: #fff; /* White color for the heading */
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background: linear-gradient(135deg, #ff6b6b, #f9a826); /* Gradient background for the button */
+            border: none; /* Remove border */
+            color: #fff; /* White text color */
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            opacity: 0.9; /* Slightly darken button on hover */
+        }
+    </style>
+</head>
+<body>
+    <spline-viewer url="https://prod.spline.design/JW6kwzlNUnxbbRoY/scene.splinecode"></spline-viewer>
+    <div class="login-container">
+        <h1>Login with Google</h1>
+        <button id="googleLogin">Login with Google</button>
+    </div>
+</body>
+</html>
